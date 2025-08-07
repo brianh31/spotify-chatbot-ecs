@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Spotify Chatbot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="icon" href="Spotify_Primary_Logo_RGB_Black.ico" type="image/x-icon">
+  <style>
+    :root {
+        --bg-gradient: linear-gradient(to right, #003011, #000000, #003011);
+        --chat-bg: #121212;
+        --user-bubble: #1DB954;
+        --bot-bubble: #2a2a2a;
+        --text-color: #ffffff;
+        --input-bg: #202020;
+        --input-text: #ffffff;
+        --search-bg: #2a2a2a;
+        --playbar-bg: #000;
+        --result-bg: #181818;
+        --header-bg: #121212;
+        --top-bar-bg: #000000;
+        --search-input-bg: #242424;
+        --search-input-text: #ffffff;
+        --search-result-hover: #282828;
+        --item-card-bg: #2a2a2a;
+        --artist-track-card-bg: #2a2a2a;
+    }
+
+    [data-theme="light"] {
+        --bg-gradient: linear-gradient(to right, #ffffff, #f0f0f0);
+        --chat-bg: #ffffff;
+        --user-bubble: #1DB954;
+        --bot-bubble: #f0f0f0;
+        --text-color: #000000;
+        --input-bg: #f5f5f5;
+        --input-text: #000000;
+        --search-bg: #e6e6e6;
+        --playbar-bg: #f5f5f5;
+        --result-bg: #f0f0f0;
+        --header-bg: #ffffff;
+        --top-bar-bg: #f5f5f5;
+        --search-input-bg: #e6e6e6;
+        --search-input-text: #000000;
+        --search-result-hover: #e6e6e6;
+        --item-card-bg: #f0f0f0;
+        --artist-track-card-bg: #f0f0f0;
+    }
+
+
+
+    body {
+        font-family: 'Roboto', sans-serif;
+        background: var(--bg-gradient);
+        color: var(--text-color);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        justify-content: center;
+        padding-top: 84px;
+        transition: background 0.5s, color 0.5s;
+        background-size: 200% 100%;
+        animation: gradientFlow 15s linear infinite;
+    }
+
+    @keyframes gradientFlow {
+        0% {
+            background-position: 0% 50%;
+        }
+        100% {
+            background-position: 200% 50%;
+        }
+    }
+
+    #spotifySearch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 16px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      background-color: #242424;
+      color: white;
+      width: 100%;
+      max-width: 350px;
+      z-index: 1000;
+      outline: none;
+    }
+
+
+    #spotifyResults {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #181818;
+      padding: 12px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 475px;
+      z-index: 1001;
+      overflow-y: auto;
+      max-height: 350px;
+      display: none;
+    }
+
+
+    #spotifyResults::-webkit-scrollbar {
+      width: 6px;
+    }
+    #spotifyResults::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 10px;
+    }
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    .status-dot.online{
+      background-color: #28c76f;
+    }
+
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-width: 500px;
+        border-radius: 24px;
+        height: calc(100vh - 205px);  /* Adjust height to fit between bars */
+        margin: 10px auto;  /* Adjust margins */
+        position: fixed;  /* Fix position */
+        top: 74px;  /* Position below top bar */
+        left: 50%;  /* Center horizontally */
+        transform: translateX(-50%);  /* Center horizontally */
+        overflow: hidden;
+        /*box-shadow: 
+            0 0 30px rgba(29, 185, 84, 0.2),
+            0 0 60px rgba(29, 185, 84, 0.15),
+            0 0 100px rgba(29, 185, 84, 0.1);*/
+        background-color: var(--chat-bg);
+        z-index: 1;
+    }
+
+    .chat-container::before {
+        content: '';
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -px;
+        /*background: linear-gradient(45deg, 
+            rgba(29, 185, 84, 0.2),
+            rgba(29, 185, 84, 0.15),
+            rgba(29, 185, 84, 0.1)
+        );*/
+        border-radius: 28px;
+        z-index: -1;
+        filter: blur(15px);
+    }
+
+    .chat-container::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        /*background: radial-gradient(
+            circle at center,
+            rgba(29, 185, 84, 0.15),
+            transparent 70%
+        );*/
+        z-index: -2;
+        filter: blur(20px);
+    }
+    #chatHeader .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;  /* Increased gap between items */
+    }
+
+    #themeToggle {
+      cursor: pointer;
+      font-size: 1.2rem;
+      user-select: none;
+    }
+
+    #chatHeader .status {
+        font-size: 0.6rem;  /* Made smaller */
+        color: #1DB954;  /* Spotify green color */
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    #chatHeader .status::before {
+        content: "●";
+        color: #1DB954;  /* Spotify green color */
+        font-size: 0.5rem;  /* Adjust size of the dot */
+    }
+
+
+    #chatHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background-color: var(--chat-bg);
+    }
+
+
+    #chatHeader .title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+
+    #chatHeader img {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+    }
+
+
+
+    .message {
+      max-width: 70%;
+      margin: 8px 10px;
+      padding: 12px 16px;
+      border-radius: 18px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      line-height: 1.4;
+      word-break: break-word;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    .message span{
+      white-space: pre-line;
+    }
+
+    .user {
+      background: linear-gradient(to right, #1DB954, #1ed760);
+      color: black;
+      align-self: flex-end;
+      text-align: right;  
+    }
+
+
+    .bot {
+        background: var(--bot-bubble);
+        color: var(--text-color);
+        align-self: flex-start;
+        text-align: left;
+    }
+
+  .typing {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 8px 10px;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: var(--bot-bubble);
+      align-self: flex-start;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+
+  .typing-dot {
+      width: 6px;
+      height: 6px;
+      background-color: white;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+  }
+
+  .typing-dot:nth-child(2) { 
+      animation-delay: 0.2s; 
+  }
+
+  .typing-dot:nth-child(3) { 
+      animation-delay: 0.4s; 
+  }
+
+  @keyframes blink {
+      0%, 80%, 100% { opacity: 0.2; }
+      40% { opacity: 1; }
+  }
+
+    /* Quick reply buttons */
+    .quick-replies {
+      margin-top: 5px;
+      display: flex;
+      gap: 5px;
+    }
+    .quick-replies button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      background-color: #1DB954;
+      color: #fff;
+      font-size: 0.8rem;
+    }
+
+    .message img {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: none; 
+    }
+
+    .circular-btn {
+      margin-bottom: 10px;
+    }
+
+
+    .circular-btn i {
+      color: white;
+      font-size: 15px;
+    }
+
+
+    #chatbox {
+        background-color: var(--chat-bg);
+        padding: 20px 14px;
+        width: 100%;
+        height: calc(100% - 120px);
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        scroll-behavior: smooth;
+        box-sizing: border-box;
+    }
+
+
+
+    #inputArea {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        padding: 12px 14px;
+        box-sizing: border-box;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        background-color: var(--chat-bg);
+    }
+
+    #userInput {
+        flex: 1;
+        padding: 12px 14px;
+        border-radius: 40px;
+        border: none;
+        font-size: 0.9em;
+        background-color: var(--input-bg);
+        color: var(--input-text);
+        transition: background 0.3s, color 0.3s;
+    }
+
+    #sendBtn {
+        margin-left: 10px;
+        background-color: #1DB954;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 1.1em;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.3s;
+    }
+
+    #sendBtn:hover {
+        background-color: #1aa34a;
+    }
+
+    #spotifyPlaybar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100px;
+      background-color: var(--playbar-bg);
+      color: var(--text-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 30px;
+      z-index: 100;
+      box-sizing: border-box;
+    }
+
+
+    #playbarLeft {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 30%;
+    }
+
+
+    #playbarLeft img {
+      width: 60px;
+      height: 60px;
+      border-radius: 4px;
+    }
+
+
+    #trackTitle {
+      font-size: 14px;
+      color: var(--text-color);
+      font-weight: normal;
+      margin-bottom: 4px;
+    }
+
+    #trackArtist {
+      font-size: 10px;
+      color: var(--text-color);      
+    }
+
+
+    #playbarCenter {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-grow: 1;
+      width: 40%;
+    }
+
+
+    #playPauseBtn {
+      font-size: 22px;
+      cursor: pointer;
+      background-color: #1DB954;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 6px;
+    }
+
+
+    #seekContainer {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%; /* Make seek container full width of center section */
+        max-width: 1000px;
+    }
+    #currentTime, #duration {
+      font-size:11px;
+      color: #a7a7a7;
+      min-width: 20px;
+    }
+
+    #seekSlider {
+        flex: 1;
+    }
+
+    #playbarCenter {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 40%;
+        gap: 8px;  /* Space between play button and seek bar */
+    }
+
+
+    #playbarRight {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end; /* Align volume to the right */
+        width: 30%; /* Set fixed width for right section */
+    }
+
+
+    #volumeSlider {
+        width: 100px; /* Increase width of volume slider */
+        margin-left: auto; /* Push volume slider to the right */
+    }
+    /* Slider styling */
+    input[type="range"] {
+        -webkit-appearance: none;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    /* Track styling */
+    input[type="range"]::-webkit-slider-runnable-track {
+        background: #535353;
+        height: 4px;
+        border-radius: 2px;
+    }
+
+    input[type="range"]::-moz-range-track {
+        background: #535353;
+        height: 4px;
+        border-radius: 2px;
+    }
+
+    /* Thumb styling - Always visible now */
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        height: 12px;
+        width: 12px;
+        border-radius: 50%;
+        background: #ffffff;  /* White color for better visibility */
+        margin-top: -4px;
+        display: block;  /* Always shown now */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);  /* Added shadow for depth */
+    }
+
+    input[type="range"]::-moz-range-thumb {
+        height: 12px;
+        width: 12px;
+        border: none;
+        border-radius: 50%;
+        background: #ffffff;  /* White color for better visibility */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.5);  /* Added shadow for depth */
+    }
+
+    /* Progress styling */
+    #seekSlider {
+        --seek-before-width: 0%;
+        background: linear-gradient(to right, white 0%, white var(--seek-before-width), #535353 var(--seek-before-width), #535353 100%);
+        height: 4px;
+        border-radius: 2px;
+    }
+
+    #volumeSlider {
+        --volume-before-width: 70%;
+        background: linear-gradient(to right, #1DB954 50%, #1DB954 var(--volume-before-width), #535353 var(--volume-before-width), #535353 100%);
+        height: 4px;
+        border-radius: 2px;
+    }
+
+    /* Hover effects - Slightly larger on hover */
+    input[type="range"]:hover::-webkit-slider-thumb {
+        transform: scale(1.2);
+        transition: transform 0.2s;
+    }
+
+    input[type="range"]:hover::-moz-range-thumb {
+        transform: scale(1.2);
+        transition: transform 0.2s;
+    }
+
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background-color: var(--top-bar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 1000;
+}
+
+.top-bar-left {
+  flex: 1;
+}
+
+.top-bar-center {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+}
+
+.top-bar-right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.top-bar-logo {
+  width: 130px;
+  height: auto;
+  padding: 0 8px;
+}
+
+.search-container {
+  width: 100%;
+  max-width: 600px;
+}
+
+#spotifySearch {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 23px;
+  border: none;
+  background-color: var(--search-input-bg);
+  color: var(--search-input-text);
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+}
+
+#spotifySearch::placeholder {
+  color: #909090;
+}
+
+#spotifySearch:focus {
+  background-color: #2a2a2a;
+}
+
+#spotifyResults {
+  position: absolute;
+  top: 70px;  /* Adjust based on your layout */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 475px;
+  z-index: 1001;
+  background: var(--result-bg);
+}
+
+.main-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    width: 100%;
+    max-width: 1200px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    position: relative;
+}
+
+
+.left-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 450px;
+    border-radius: 24px;
+    height: calc(100vh - 205px);  /* Adjust height to fit between bars */
+    margin: 10px auto;  /* Adjust margins */
+    position: fixed;  /* Fix position */
+    top: 74px;  /* Position below top bar */
+    left: 50%;  /* Center horizontally */
+    transform: translateX(-158%);  /* Center horizontally */
+    overflow: hidden;
+    /*box-shadow: 
+        0 0 30px rgba(29, 185, 84, 0.2),
+        0 0 60px rgba(29, 185, 84, 0.15),
+        0 0 100px rgba(29, 185, 84, 0.1);*/
+    background-color: var(--chat-bg);
+    z-index: 1;
+    isolation: isolate;
+    justify-content: space-between;
+}
+
+.left-panel::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  /*background: linear-gradient(45deg,
+    rgba(29, 185, 84, 0.2),
+    rgba(29, 185, 84, 0.15),
+    rgba(29, 185, 84, 0.1)
+  );*/
+  border-radius: 28px;
+  z-index: -1;
+}
+
+.left-panel::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  /*background: radial-gradient(
+    circle at center,
+    rgba(29, 185, 84, 0.15),
+    transparent 70%
+  );*/
+  filter: blur(20px);
+  z-index: -2;
+}
+
+
+.popular-section {
+  background-color: var(--chat-bg);
+  padding: 14px;
+  border-radius: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  height: 48%;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+
+.popular-section h3 {
+  color: white;
+  font-size: 0.9rem;
+  font-weight: bold;
+  font-family: 'Roboto', sans-sherif;
+  margin: 0 0 10px 0;
+}
+
+
+
+.popular-header {
+  color: white ;
+  font-size: 0.9rem; 
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-family: 'Roboto', sans-serif;
+  padding-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+.divider {
+  border: none;
+  border-top: 1px solid grey;
+  margin: 0%;
+}
+
+
+.top-section {
+  height: 41%;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.bottom-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+  overflow-y: auto;
+  font-family: inherit;
+}
+
+
+.scroll-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 10px;
+  max-height: calc(100% - 30px);
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scroll-row::-webkit-scrollbar {
+  width: 6px;
+}
+
+
+.scroll-row::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 10px;
+}
+
+.scroll-row::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.divider {
+  border: none;
+}
+
+.item-card {
+  background-color: var(--item-card-bg);
+  display: flex;
+  padding: 8px;
+  color: white;
+  flex-direction: row; /* Changed to row */
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  width: calc(100% - 16px); /* Account for padding */
+  height: 60px; /* Fixed height */
+  transition: background-color 0.3s, transform 0.2s;
+  align-items: center; /* Center items vertically */
+}
+
+.item-card .text-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+}
+
+
+.item-card:hover {
+  background: #282828;
+  transform: scale(1.02);
+}
+
+
+/* Adjust the image size */
+.item-card img {
+  width: 50px; /* Fixed width */
+  height: 50px; /* Fixed height */
+  object-fit: cover;
+  border-radius: 4px;
+  margin-right: 12px; /* Add space between image and text */
+  flex-shrink: 0; /* Prevent image from shrinking */
+}
+
+/* Adjust the title style */
+.item-card .title {
+    color: var(--text-color);
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.item-card .artist {
+    color: #b3b3b3;
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.chatbox-style {
+  background-color: var(--chat-bg);
+  border-radius: 20px;
+  padding: 20px;
+  margin: 1px;
+}
+
+#skipPrevBtn, #skipNextBtn {
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+#skipPrevBtn:hover, #skipNextBtn:hover {
+    opacity: 1;
+}
+
+
+.right-panel {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 410px;
+    border-radius: 24px;
+    height: calc(100vh - 245px);
+    margin: 10px auto;
+    position: fixed;
+    top: 74px;
+    left: 50%;
+    transform: translateX(58%);
+    overflow: hidden;
+    /*box-shadow: 
+        0 0 30px rgba(29, 185, 84, 0.2),
+        0 0 60px rgba(29, 185, 84, 0.15),
+        0 0 100px rgba(29, 185, 84, 0.1);*/
+    background-color: var(--chat-bg);
+    padding: 20px;
+}
+
+.right-panel::before {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border-radius: 28px;
+    z-index: -1;
+}
+
+.panel-header {
+    position: sticky;
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: white;
+    padding: 0px 10px 5px 20px;
+    background-color: var(--chat-bg);
+    z-index: 2;
+}
+
+.scrollable-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 20px;
+}
+
+.current-track-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 5px;
+    padding-top: 5px;
+}
+
+#nowPlayingImage {
+    width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.track-details {
+    text-align: left;
+    width: 100%;
+}
+
+#nowPlayingTitle {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+}
+
+#nowPlayingArtist {
+    font-size: 0.9rem;
+    color: #b3b3b3;
+}
+
+.artist-tracks-section {
+    flex: 1;
+}
+
+.artist-tracks-header {
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: #b3b3b3;
+    margin-bottom: 10px;
+}
+
+.artist-tracks-grid {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    overflow-y: auto;
+    max-height: calc(100% - 50px);
+}
+
+.artist-track-card {
+    background-color: var(--artist-track-card-bg);
+    display: flex;
+    padding: 8px;
+    color: white;
+    flex-direction: row;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    width: calc(100% - 16px);
+    height: 60px;
+    transition: background-color 0.3s, transform 0.2s;
+    align-items: center;
+    position: relative;
+    height: 60px;
+}
+
+.artist-track-card:hover {
+    background-color: #333333;
+    transform: scale(1.02);
+}
+
+.artist-track-card img {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+}
+
+.artist-track-card .track-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.artist-track-card .track-name {
+    color: var(--text-color);
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.artist-track-card .track-artist {
+    color: #b3b3b3;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quick-start-buttons {
+  display: flex;
+  justify-content: center;
+  padding: 10px;
+  background-color: var(--chat-bg);
+}
+
+.quick-start-btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 20px;
+  background: linear-gradient(to right, #1DB954, #1ed760);
+  color: black;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.quick-start-btn:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}
+
+  </style>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1196.0.min.js"></script>
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+</head>
+
+
+<body data-theme="dark">
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <img src="Spotify_Logo_Green.png" alt="Spotify Logo" class="top-bar-logo"/>
+    </div>
+    <div class="top-bar-center">
+      <div class="search-container">
+        <input type="text" id="spotifySearch" placeholder="What do you want to play?"/>
+      </div>
+    </div>
+    <div class="top-bar-right">
+    </div>
+  </div>
+  <div id="spotifyResults"></div>
+
+<div class="main-content">
+  <div class="left-panel">
+    <div class="top-section chatbox-style">
+      <div class="popular-header">Popular Albums</div>
+      <div class="scroll-row" id="popularAlbums"></div>
+      </div>
+
+    <hr class="divider" />
+
+    <div class="bottom-section chatbox-style">
+      <div class="popular-header">Popular Songs</div>
+      <div class="scroll-row" id="popularSongs"></div>
+      </div>
+    </div>
+
+  <div class="chat-container">
+    <div id="chatHeader">
+      <div class="title">
+        <img src="spotify-logo.jpeg" alt="Spotify Logo" />
+        Spotify Song Suggester
+      </div>
+      <div class="controls">
+        <span class="status">Online</span>
+        <span id="themeToggle">🌑</span>
+      </div>
+      </div>
+    <div id="chatbox"></div>
+    <div class="quick-start-buttons">
+        <button class="quick-start-btn" data-text="Song">Song</button>
+        <button class="quick-start-btn" data-text="Artist">Artist</button>
+        <button class="quick-start-btn" data-text="Recommend a Song">Recommend a Song</button>
+    </div>
+    <div id="inputArea">
+      <input id="userInput" type="text" placeholder="Type a song or artist..." autofocus/>
+      <button id="sendBtn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+
+
+  <div class="right-panel">
+      <div class="panel-header">Currently Playing</div>
+      <div class="scrollable-content">
+        <div class="current-track-container">
+            <img id="nowPlayingImage" src="spotify-logo.jpeg" alt="Current Track">
+            <div class="track-details">
+                <div id="nowPlayingTitle">No track selected</div>
+                <div id="nowPlayingArtist">No artist</div>
+            </div>
+        </div>
+        <div class="artist-tracks-section">
+            <div class="artist-tracks-header">
+                <span id="artistTracksTitle">Artist Songs</span>
+            </div>
+            <div class="artist-tracks-grid" id="artistTracksGrid"></div>
+        </div>
+      </div>
+  </div>
+
+
+  <div id="spotifyPlaybar">
+    <div id="playbarLeft">
+      <img id="coverArt" src="spotify-logo.jpeg" />
+      <div>
+        <div id="trackTitle">No track playing</div>
+        <div id="trackArtist"></div>
+      </div>
+    </div>
+    <div id="playbarCenter">
+      <div id="controls" style="display: flex; align-items: center; gap: 20px;">
+        <div id="skipPrevBtn" class="circular-btn">
+          <i class="fas fa-backward"></i>
+        </div>
+        <div id="playPauseBtn" class="circular-btn">
+          <i id="playPauseIcon" class="fas fa-play"></i>
+        </div>
+        <div id="skipNextBtn" class="circular-btn">
+          <i class="fas fa-forward"></i>
+        </div>
+      </div>
+      <div id="seekContainer">
+        <span id="currentTime">0:00</span>
+        <input type="range" id="seekSlider" min="0" max="100" value="0">
+        <span id="duration">0:00</span>
+      </div>
+    </div>
+
+
+    <div id="playbarRight">
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.7">
+    </div>
+  </div>
+
+
+  <script>
+
+    AWS.config.region = 'us-east-1';
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+      IdentityPoolId: 'us-east-1:02a8c159-f394-45f6-ab17-f45f17be3277'
+    });
+    const lexruntime = new AWS.LexRuntimeV2();
+    const botId = '2I6BDVXDKO';
+    const botAliasId = 'TSTALIASID';
+    const localeId = 'en_US';
+    const sessionId = 'session-' + Date.now();
+    const BOT_AVATAR = "spotify-logo.jpeg";
+    const USER_AVATAR = "https://cdn-icons-png.flaticon.com/512/847/847969.png";
+
+   
+  function sendMessage() {
+      const inputField = document.getElementById("userInput");
+      const text = inputField.value.trim();
+      if (!text) return;
+      
+      addMessage(text, "user");
+      inputField.value = "";
+      
+      showTypingIndicator();  // Add this line
+      
+      const params = { botId, botAliasId, localeId, sessionId, text };
+      lexruntime.recognizeText(params, function (err, data) {
+          removeTypingIndicator();  // Add this line
+          if (err) {
+              addMessage("Sorry, something went wrong 😕", "bot");
+          } else {
+              const message = data.messages?.[0]?.content || "(No response)";
+              addMessage(message, "bot");
+          }
+      });
+  }
+
+  function showTypingIndicator() {
+      const chatbox = document.getElementById("chatbox");
+      const typingDiv = document.createElement("div");
+      typingDiv.className = "typing";
+      typingDiv.id = "typingIndicator";
+      typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+      chatbox.appendChild(typingDiv);
+      chatbox.scrollTo({ top: chatbox.scrollHeight, behavior: "smooth" });
+  }
+
+  function removeTypingIndicator() {
+      const typingDiv = document.getElementById("typingIndicator");
+      if (typingDiv) typingDiv.remove();
+  }
+
+
+    function addMessage(message, sender) {
+      const chatbox = document.getElementById("chatbox");
+      const div = document.createElement("div");
+      div.className = `message ${sender}`;
+      const formattedMessage = message.replace(/\n/g, '<br>');
+
+      div.innerHTML = (sender === "bot"
+        ? `<img src="${BOT_AVATAR}" alt="Bot Avatar"/>`
+        : `<img src="${USER_AVATAR}" alt="User Avatar"/>`) + `<span>${message}</span>`;
+      chatbox.appendChild(div);
+      chatbox.scrollTo({ top: chatbox.scrollHeight, behavior: "smooth" });
+    }
+
+
+    const themeToggle = document.getElementById("themeToggle");
+    themeToggle.onclick = () => {
+      const isDark = document.body.getAttribute("data-theme") === "dark";
+      document.body.setAttribute("data-theme", isDark ? "light" : "dark");
+      themeToggle.textContent = isDark ? "☀️" : "🌑";
+    };
+
+    // Add this new event listener at the end of your script
+    window.addEventListener('DOMContentLoaded', () => {
+      const isDark = document.body.getAttribute("data-theme") === "dark";
+      themeToggle.textContent = isDark ? "🌑" : "☀️";
+    });
+
+    document.getElementById("userInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
+
+
+<script>
+  const CLIENT_ID = "b45c6c2d3ab54a1e8fa01d31240949d9";
+  const REDIRECT_URI = "https://spotify.chatbot.brhoc.people.aws.dev/callback";
+
+
+let currentContext = {
+    type: null, // 'album', 'playlist', or 'song'
+    items: [], // will store the current queue of tracks
+    currentIndex: 0
+};
+
+
+  function getHashParams() {
+    const hashParams = {};
+    const r = /([^&;=]+)=?([^&;]*)/g;
+    const q = window.location.hash.substring(1);
+    let e;
+    while (e = r.exec(q)) {
+      hashParams[e[1]] = decodeURIComponent(e[2]);
+    }
+    return hashParams;
+  }
+
+
+  function login() {
+    window.location.href = "https://07bbkvgk3g.execute-api.us-east-1.amazonaws.com/prod/login";
+  }
+
+
+  let token;
+  const params = getHashParams();
+
+
+  if (params.access_token) {
+    localStorage.setItem("spotify_token", params.access_token);
+    window.history.replaceState(null, "", window.location.pathname); // Clean URL without reload
+    token = params.access_token;
+  } else {
+    token = localStorage.getItem("spotify_token");
+    if (!token) login();
+  }
+
+
+  function checkResponse(response) {
+    if (!response.ok) {
+      throw new Error(`HTTP status ${response.status}`);
+    }
+    return response.json();
+  }
+
+
+  fetch('https://api.spotify.com/v1/me', {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
+    .then(checkResponse)
+    .then(data => {
+      console.log("Logged in as:", data.display_name);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      if (error.message.includes('401')) {
+        login();
+      }
+    });
+
+  let lastPlayedTrackId = null;
+  let currentPlayer, isPaused = false;
+  let currentTrackDuration = 0;
+
+
+  window.onSpotifyWebPlaybackSDKReady = () => {
+    if (!token) {
+      console.error('No token available');
+      login();
+      return;
+    }
+  
+
+
+    currentPlayer = new Spotify.Player({
+      name: 'Spotify Chatbot Player',
+      getOAuthToken: cb => cb(token),
+      volume: 0.7
+    });
+
+
+    currentPlayer.addListener('initialization_error', ({ message }) => {
+      console.error('Failed to initialize:', message);
+    });
+
+
+    currentPlayer.addListener('authentication_error', ({ message }) => {
+      console.error('Failed to authenticate:', message);
+      login();
+    });
+
+
+    currentPlayer.addListener('ready', ({ device_id }) => {
+      console.log('Player ready with device ID', device_id);
+      fetch('https://api.spotify.com/v1/me/player', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ device_ids: [device_id], play: false })
+      });
+    });
+
+currentPlayer.addListener('player_state_changed', state => {
+    if (!state) return;
+    isPaused = state.paused;
+    currentTrackDuration = state.duration / 1000;
+    
+    const currentTrack = state.track_window.current_track;
+    console.log('Current track:', currentTrack);
+    console.log('Current artists:', currentTrack.artists); // Debug line
+
+    // Update playbar
+    document.getElementById('trackTitle').textContent = currentTrack.name;
+    document.getElementById('trackArtist').textContent = currentTrack.artists[0].name;
+    document.getElementById('coverArt').src = currentTrack.album.images[0]?.url || 'spotify-logo.jpeg';
+    
+    // Update right panel - only if track has changed
+    const currentTrackId = currentTrack.id;
+    if (currentTrackId !== lastPlayedTrackId) {
+        lastPlayedTrackId = currentTrackId;
+        
+        document.getElementById('nowPlayingImage').src = currentTrack.album.images[0]?.url || 'spotify-logo.jpeg';
+        document.getElementById('nowPlayingTitle').textContent = currentTrack.name;
+        document.getElementById('nowPlayingArtist').textContent = currentTrack.artists[0].name;
+        document.getElementById('artistTracksTitle').textContent = `${currentTrack.artists[0].name} Songs`;
+        
+        // Show loading state
+        document.getElementById('artistTracksGrid').innerHTML = 
+            '<div style="color: #b3b3b3; text-align: center; padding: 20px;">Loading...</div>';
+
+        // Use exact artist name for search
+        const artistName = currentTrack.artists[0].name;
+        let searchQuery;
+
+        if (artistName.toLowerCase().includes('bts') || artistName.includes('방탄소년단')) {
+            // Direct BTS artist ID - this is BTS's actual Spotify artist ID
+            const btsArtistId = '3Nrfpe0tUJi4K4DXYWgMUX';
+            
+            // Fetch BTS tracks directly
+            fetch(`https://api.spotify.com/v1/artists/${btsArtistId}/top-tracks?market=US`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch tracks');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Artist tracks:', data);
+                const artistTracksGrid = document.getElementById('artistTracksGrid');
+                artistTracksGrid.innerHTML = '';
+                
+                // Filter out the current playing track and get 10 different tracks
+                const otherTracks = data.tracks
+                    .filter(track => track.id !== currentTrack.id)
+                    .slice(0, 10);
+                
+                otherTracks.forEach(track => {
+                    const trackCard = document.createElement('div');
+                    trackCard.className = 'artist-track-card';
+                    trackCard.innerHTML = `
+                        <img src="${track.album.images[0]?.url}" alt="${track.name}" style="width: 50px; height: 50px; border-radius: 4px; margin-right: 12px;">
+                        <div class="track-info">
+                            <div class="track-name" style="font-size: 14px; margin-bottom: 4px;">${track.name}</div>
+                            <div class="track-artist" style="font-size: 12px; color: #b3b3b3;">${track.artists[0].name}</div>
+                        </div>
+                    `;
+                    
+                    trackCard.onclick = () => {
+                        fetch('https://api.spotify.com/v1/me/player/play', {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                uris: [track.uri]
+                            })
+                        }).catch(error => {
+                            console.error('Error playing track:', error);
+                        });
+                    };
+                    
+                    artistTracksGrid.appendChild(trackCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching artist tracks:', error);
+                document.getElementById('artistTracksGrid').innerHTML = 
+                    '<div style="color: #b3b3b3; text-align: center; padding: 20px;">Unable to load tracks</div>';
+            });
+        } else {
+            // Regular artist search for non-BTS artists
+            searchQuery = encodeURIComponent(artistName);
+            
+            // Continue with regular artist search
+            fetch(`https://api.spotify.com/v1/search?q=artist:"${searchQuery}"&type=artist&limit=1`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch artist');
+                return response.json();
+            })
+            .then(data => {
+                if (!data.artists || !data.artists.items.length) {
+                    throw new Error('Artist not found');
+                }
+                
+                const artistId = data.artists.items[0].id;
+                console.log('Found artist ID:', artistId);
+
+                // Now fetch the artist's top tracks
+                return fetch(`https://api.spotify.com/v1/artists/${artistId}/top-tracks?market=US`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to fetch tracks');
+                return response.json();
+            })
+            .then(data => {
+                console.log('Artist tracks:', data);
+                const artistTracksGrid = document.getElementById('artistTracksGrid');
+                artistTracksGrid.innerHTML = '';
+                
+                // Filter out the current playing track and get 10 different tracks
+                const otherTracks = data.tracks
+                    .filter(track => track.id !== currentTrack.id)
+                    .slice(0, 10);
+                
+                otherTracks.forEach(track => {
+                    const trackCard = document.createElement('div');
+                    trackCard.className = 'artist-track-card';
+                    trackCard.innerHTML = `
+                        <img src="${track.album.images[0]?.url}" alt="${track.name}" style="width: 50px; height: 50px; border-radius: 4px; margin-right: 12px;">
+                        <div class="track-info">
+                            <div class="track-name" style="font-size: 14px; margin-bottom: 4px;">${track.name}</div>
+                            <div class="track-artist" style="font-size: 12px; color: #b3b3b3;">${track.artists[0].name}</div>
+                        </div>
+                    `;
+                    
+                    trackCard.onclick = () => {
+                        fetch('https://api.spotify.com/v1/me/player/play', {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                uris: [track.uri]
+                            })
+                        }).catch(error => {
+                            console.error('Error playing track:', error);
+                        });
+                    };
+                    
+                    artistTracksGrid.appendChild(trackCard);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching artist tracks:', error);
+                document.getElementById('artistTracksGrid').innerHTML = 
+                    '<div style="color: #b3b3b3; text-align: center; padding: 20px;">Unable to load tracks</div>';
+            });
+        }
+    }
+
+    // Update play/pause icon
+    const icon = document.getElementById("playPauseIcon");
+    if (state.paused) {
+        icon.classList.remove("fa-pause");
+        icon.classList.add("fa-play");
+    } else {
+        icon.classList.remove("fa-play");
+        icon.classList.add("fa-pause");
+    }
+});
+
+    document.getElementById("playPauseBtn").onclick = () => {
+        currentPlayer.togglePlay();
+        
+        const icon = document.getElementById("playPauseIcon");
+        if (isPaused) {
+            icon.classList.remove("fa-play");
+            icon.classList.add("fa-pause");
+        } else {
+            icon.classList.remove("fa-pause");
+            icon.classList.add("fa-play");
+        }
+        isPaused = !isPaused;
+    };
+
+
+    document.getElementById("volumeSlider").addEventListener("input", (e) => {
+      currentPlayer.setVolume(parseFloat(e.target.value));
+    });
+
+
+    const seekSlider = document.getElementById("seekSlider");
+    seekSlider.addEventListener("input", (e) => {
+      currentPlayer.seek(currentTrackDuration * 1000 * (e.target.value / 100));
+    });
+
+
+    setInterval(() => {
+      if (currentPlayer && !isPaused) {
+        currentPlayer.getCurrentState().then(state => {
+          if (!state) return;
+          const progress = state.position / state.duration * 100;
+          document.getElementById("seekSlider").value = progress;
+          document.getElementById("currentTime").textContent = formatTime(state.position / 1000);
+          document.getElementById("duration").textContent = formatTime(state.duration / 1000);
+        });
+      }
+    }, 1000);
+
+
+    currentPlayer.connect();
+  };
+
+
+  function formatTime(sec) {
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60);
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  }
+
+
+  const searchInput = document.getElementById("spotifySearch");
+  const resultsDiv = document.getElementById("spotifyResults");
+
+
+  searchInput.addEventListener("keydown", async (e) => {
+    if (e.key === "Enter") {
+      const query = searchInput.value.trim();
+      if (!query) return;
+
+
+      const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      const data = await res.json();
+      resultsDiv.innerHTML = '';
+      resultsDiv.style.display = "block";
+
+
+      data.tracks.items.forEach(track => {
+        const row = document.createElement("div");
+        row.style = "display:flex;align-items:center;gap:10px;background:#181818;padding:10px;border-radius:6px;margin-bottom:6px;cursor:pointer;";
+        row.innerHTML = `
+          <img src="${track.album.images[0]?.url}" style="width:40px;height:40px;border-radius:4px;">
+          <div>
+            <div style="color:white;font-weight:bold;">${track.name}</div>
+            <div style="color:#aaa;">${track.artists.map(a => a.name).join(', ')}</div>
+          </div>`;
+        row.onclick = async () => {
+          document.getElementById("coverArt").src = track.album.images[0]?.url || 'spotify-logo.jpeg';
+          document.getElementById("trackTitle").textContent = track.name;
+          document.getElementById("trackArtist").textContent = track.artists.map(a => a.name).join(', ');
+
+
+          await fetch(`https://api.spotify.com/v1/me/player/play`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uris: [track.uri] })
+          });
+
+
+          resultsDiv.style.display = "none";
+          searchInput.value = "";
+        };
+        resultsDiv.appendChild(row);
+      });
+    }
+  });
+
+
+  document.addEventListener('click', function (e) {
+    if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+      resultsDiv.style.display = 'none';
+    }
+  });
+
+
+  function updateSliderBackground(slider, value) {
+    slider.style.setProperty('--seek-before-width', `${value}%`);
+  }
+
+
+  function updateVolumeBackground(slider, value) {
+    slider.style.setProperty('--volume-before-width', `${value * 100}%`);
+  }
+
+
+  document.getElementById("volumeSlider").addEventListener("input", (e) => {
+    const value = e.target.value;
+    currentPlayer.setVolume(parseFloat(value));
+    updateVolumeBackground(e.target, value);
+  });
+  document.addEventListener("keydown", (e) => {
+      // Check if the focused element is an input or if user is typing
+      const isInput = (
+          e.target.tagName === "INPUT" ||
+          e.target.tagName === "TEXTAREA" ||
+          e.target.isContentEditable ||
+          e.target.id === "spotifySearch" ||
+          e.target.id === "userInput"
+      );
+
+      // Only handle space bar if:
+      // 1. The key pressed is space
+      // 2. User is not typing in any input field
+      // 3. Current player exists
+      if (e.code === "Space" && !isInput && currentPlayer) {
+          e.preventDefault();
+          currentPlayer.togglePlay();
+          
+          // Update the play/pause icon
+          const icon = document.getElementById("playPauseIcon");
+          if (isPaused) {
+              icon.classList.remove("fa-play");
+              icon.classList.add("fa-pause");
+          } else {
+              icon.classList.remove("fa-pause");
+              icon.classList.add("fa-play");
+          }
+          isPaused = !isPaused;
+      }
+  });
+
+
+  setInterval(() => {
+    if (currentPlayer && !isPaused) {
+      currentPlayer.getCurrentState().then(state => {
+        if (!state) return;
+        const progress = state.position / state.duration * 100;
+        const seekSlider = document.getElementById("seekSlider");
+        seekSlider.value = progress;
+        updateSliderBackground(seekSlider, progress);
+        document.getElementById("currentTime").textContent = formatTime(state.position / 1000);
+        document.getElementById("duration").textContent = formatTime(state.duration / 1000);
+      });
+    }
+  }, 1000);
+
+async function fetchPopularContent() {
+  try {
+    // Fetch popular tracks
+    const tracksResponse = await fetch('https://api.spotify.com/v1/browse/featured-playlists', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const tracksData = await tracksResponse.json();
+    
+    // Fetch popular albums
+    const albumsResponse = await fetch('https://api.spotify.com/v1/browse/new-releases', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const albumsData = await albumsResponse.json();
+
+    // Populate songs
+    const songsRow = document.querySelector('.songs-row');
+    songsRow.innerHTML = tracksData.playlists.items.map(playlist => `
+      <div class="item-card" data-uri="${playlist.uri}">
+        <img src="${playlist.images[0].url}" alt="${playlist.name}">
+        <div class="title">${playlist.name}</div>
+        <div class="artist">By ${playlist.owner.display_name}</div>
+      </div>
+    `).join('');
+
+    // Populate albums
+    const albumsRow = document.querySelector('.albums-row');
+    albumsRow.innerHTML = albumsData.albums.items.map(album => `
+      <div class="item-card" data-uri="${album.uri}">
+        <img src="${album.images[0].url}" alt="${album.name}">
+        <div class="title">${album.name}</div>
+        <div class="artist">${album.artists[0].name}</div>
+      </div>
+    `).join('');
+
+    // Add click handlers
+    document.querySelectorAll('.item-card').forEach(card => {
+      card.addEventListener('click', async () => {
+        const uri = card.dataset.uri;
+        try {
+          await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              context_uri: uri
+            })
+          });
+        } catch (error) {
+          console.error('Error playing track:', error);
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('Error fetching popular content:', error);
+  }
+}
+
+setInterval(fetchPopularContent, 300000);
+
+function getAccessTokenFromURL() {
+  const hash = window.location.hash;
+  const params = new URLSearchParams(hash.slice(1));
+  return params.get('access_token');
+}
+
+
+async function loadPopularSongsAndAlbums(token) {
+  const songContainer = document.getElementById('popularSongs');
+  const albumContainer = document.getElementById('popularAlbums');
+  songContainer.innerHTML = '';
+  albumContainer.innerHTML = '';
+
+  try {
+    // Fetch 100 popular albums (fetch in batches of 50)
+    const albumsPromises = [
+      fetch('https://api.spotify.com/v1/browse/new-releases?limit=50&offset=0', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('https://api.spotify.com/v1/browse/new-releases?limit=50&offset=50', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ];
+
+    // Fetch 100 top tracks (fetch in batches of 50)
+    const tracksPromises = [
+      fetch('https://api.spotify.com/v1/me/top/tracks?limit=50&offset=0&time_range=long_term', {
+        headers: { Authorization: `Bearer ${token}` }
+      }),
+      fetch('https://api.spotify.com/v1/me/top/tracks?limit=50&offset=50&time_range=long_term', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    ];
+
+    // Wait for all requests to complete
+    const [albumsResponses, tracksResponses] = await Promise.all([
+      Promise.all(albumsPromises),
+      Promise.all(tracksPromises)
+    ]);
+
+    // Process album responses
+    const albumsData = await Promise.all(albumsResponses.map(res => res.json()));
+    let allAlbums = albumsData.flatMap(data => data.albums.items);
+    allAlbums = shuffleArray([...allAlbums]);
+
+    // Process tracks responses
+    const tracksData = await Promise.all(tracksResponses.map(res => res.json()));
+    let allTracks = tracksData.flatMap(data => data.items);
+    allTracks = shuffleArray([...allTracks]);
+
+    // Create and append album elements
+    allAlbums.forEach(album => {
+      const albumDiv = document.createElement('div');
+      albumDiv.className = 'item-card';
+      albumDiv.dataset.uri = album.uri;
+      albumDiv.onclick = async () => {
+        try {
+          const albumTracksRes = await fetch(`https://api.spotify.com/v1/albums/${album.id}/tracks`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const albumTracks = await albumTracksRes.json();
+          const uris = albumTracks.items.map(t => t.uri);
+
+          currentContext = {
+              type: 'album',
+              items: albumTracks.items,
+              currentIndex: 0
+          };
+
+          await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              context_uri: album.uri
+            })
+          });
+        } catch (error) {
+          console.error('Error playing album:', error);
+        }
+      };
+
+      albumDiv.innerHTML = `
+          <img src="${album.images[0]?.url}" alt="${album.name}">
+          <div class="text-content">
+              <div class="title">${album.name}</div>
+              <div class="artist">${album.artists[0].name}</div>
+          </div>
+      `;
+      albumContainer.appendChild(albumDiv);
+    });
+
+    // Create and append track elements
+    allTracks.forEach(track => {
+      const songDiv = document.createElement('div');
+      songDiv.className = 'item-card';
+      songDiv.dataset.uri = track.uri;
+      songDiv.onclick = async () => {
+        try {
+          // Get all song elements
+          const allSongs = Array.from(document.querySelectorAll('#popularSongs .item-card'));
+          const songUris = allSongs.map(song => song.dataset.uri);
+          const currentSongIndex = songUris.indexOf(track.uri);
+
+          // Update current context
+          currentContext = {
+            type: 'song',
+            items: songUris,
+            currentIndex: currentSongIndex
+          };
+
+          await fetch('https://api.spotify.com/v1/me/player/play', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              uris: [track.uri]
+            })
+          });
+        } catch (error) {
+          console.error('Error playing track:', error);
+        }
+      };
+
+      songDiv.innerHTML = `
+          <img src="${track.album.images[0]?.url}" alt="${track.name}">
+          <div class="text-content">
+              <div class="title">${track.name}</div>
+              <div class="artist">${track.artists[0].name}</div>
+          </div>
+      `;
+      songContainer.appendChild(songDiv);
+    });
+
+  } catch (error) {
+    console.error('Error loading Spotify data:', error);
+  }
+}
+
+// Shuffle array helper function
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+
+let currentPlaylist = [];
+let currentIndex = 0;
+let currentDeviceId = null;
+
+
+async function playTrack(uri, playlist = [uri], index = 0, token) {
+  try {
+    if (!currentDeviceId) {
+      const deviceRes = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const deviceData = await deviceRes.json();
+      currentDeviceId = deviceData.devices?.[0]?.id;
+
+
+      if (!currentDeviceId) {
+        console.error("No active device found");
+        return;
+      }
+    }
+
+
+    currentPlaylist = playlist;
+    currentIndex = index;
+
+
+    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${currentDeviceId}`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        uris: currentPlaylist,
+        offset: { position: currentIndex }
+      })
+    });
+  } catch (error) {
+    console.error("Error in playTrack:", error);
+  }
+}
+
+
+// Call on page load
+window.onload = () => {
+  if (token) {
+    loadPopularSongsAndAlbums(token);
+  }
+};
+
+
+// Skip to next track
+document.getElementById('skipNextBtn').onclick = async () => {
+    if (!currentContext.items.length) return;
+
+    currentContext.currentIndex++;
+    
+    // If we've reached the end of the current context
+    if (currentContext.currentIndex >= currentContext.items.length) {
+        if (currentContext.type === 'album') {
+            // Try to play next album
+            const allAlbums = Array.from(document.querySelectorAll('#popularAlbums .item-card'));
+            const currentAlbum = allAlbums.find(album => album.dataset.uri === currentContext.albumUri);
+            const nextAlbum = allAlbums[allAlbums.indexOf(currentAlbum) + 1];
+            
+            if (nextAlbum) {
+                nextAlbum.click();
+            }
+        } else {
+            // Wrap around to the beginning
+            currentContext.currentIndex = 0;
+        }
+    }
+
+    try {
+        if (currentContext.type === 'album') {
+            const track = currentContext.items[currentContext.currentIndex];
+            await fetch('https://api.spotify.com/v1/me/player/play', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uris: [track.uri]
+                })
+            });
+        } else {
+            await fetch('https://api.spotify.com/v1/me/player/play', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uris: [currentContext.items[currentContext.currentIndex]]
+                })
+            });
+        }
+    } catch (error) {
+        console.error('Error skipping track:', error);
+    }
+};
+
+// Skip to previous track
+document.getElementById('skipPrevBtn').onclick = async () => {
+    if (!currentContext.items.length) return;
+
+    currentContext.currentIndex--;
+    
+    // If we've reached the start of the current context
+    if (currentContext.currentIndex < 0) {
+        if (currentContext.type === 'album') {
+            // Try to play previous album
+            const allAlbums = Array.from(document.querySelectorAll('#popularAlbums .item-card'));
+            const currentAlbum = allAlbums.find(album => album.dataset.uri === currentContext.albumUri);
+            const prevAlbum = allAlbums[allAlbums.indexOf(currentAlbum) - 1];
+            
+            if (prevAlbum) {
+                prevAlbum.click();
+            }
+        } else {
+            // Wrap around to the end
+            currentContext.currentIndex = currentContext.items.length - 1;
+        }
+    }
+
+    try {
+        if (currentContext.type === 'album') {
+            const track = currentContext.items[currentContext.currentIndex];
+            await fetch('https://api.spotify.com/v1/me/player/play', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uris: [track.uri]
+                })
+            });
+        } else {
+            await fetch('https://api.spotify.com/v1/me/player/play', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    uris: [currentContext.items[currentContext.currentIndex]]
+                })
+            });
+        }
+    } catch (error) {
+        console.error('Error skipping track:', error);
+    }
+};
+
+document.querySelectorAll('.quick-start-btn').forEach(button => {
+  button.addEventListener('click', function() {
+    const text = this.getAttribute('data-text');
+    document.getElementById('userInput').value = text;
+    sendMessage();
+  });
+});
+
+
+
+</script>
+</body>
+</html>
+
+  
+
+
+
+
+
+
+
+
+
+
+
